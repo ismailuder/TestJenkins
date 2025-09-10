@@ -12,25 +12,17 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('SonarQube Analysis & Build & Test') {
             steps {
                 script {
+                    // Tek bir .NET SDK image kullanıyoruz
                     docker.image('mcr.microsoft.com/dotnet/sdk:8.0').inside {
                         withSonarQubeEnv('SONARQUBE') {
                             sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj'
                             sh 'dotnet build src/TestJenkins/TestJenkins.csproj'
+                            sh 'dotnet test src/TestJenkins/TestJenkins.csproj'
                             sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
                         }
-                    }
-                }
-            }
-        }
-
-        stage('Build & Test') {
-            steps {
-                script {
-                    docker.image('mcr.microsoft.com/dotnet/sdk:7.0').inside {
-                        sh 'dotnet test src/TestJenkins/TestJenkins.csproj'
                     }
                 }
             }
@@ -39,13 +31,8 @@ pipeline {
         stage('Docker Build & Deploy to Minikube') {
             steps {
                 sh """
-                # Build Docker image
                 docker build -t testjenkins:latest .
-
-                # Load image into Minikube
                 minikube image load testjenkins:latest
-
-                # Apply Kubernetes manifests
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
                 """
