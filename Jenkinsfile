@@ -14,17 +14,25 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SONARQUBE') {
-                    sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj'
-                    sh 'dotnet build src/TestJenkins/TestJenkins.csproj'
-                    sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
+                script {
+                    docker.image('mcr.microsoft.com/dotnet/sdk:7.0').inside {
+                        withSonarQubeEnv('SONARQUBE') {
+                            sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj'
+                            sh 'dotnet build src/TestJenkins/TestJenkins.csproj'
+                            sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
+                        }
+                    }
                 }
             }
         }
 
         stage('Build & Test') {
             steps {
-                sh 'dotnet test src/TestJenkins/TestJenkins.csproj'
+                script {
+                    docker.image('mcr.microsoft.com/dotnet/sdk:7.0').inside {
+                        sh 'dotnet test src/TestJenkins/TestJenkins.csproj'
+                    }
+                }
             }
         }
 
