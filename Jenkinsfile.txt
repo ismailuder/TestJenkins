@@ -15,8 +15,8 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('MySonarQube') {
-                    sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE'
-                    sh 'dotnet build src/TestJenkins'
+                    sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj'
+                    sh 'dotnet build src/TestJenkins/TestJenkins.csproj'
                     sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
                 }
             }
@@ -24,13 +24,20 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh 'dotnet test src/TestJenkins'
+                sh 'dotnet test src/TestJenkins/TestJenkins.csproj'
             }
         }
 
-        stage('Deploy to Minikube') {
+        stage('Docker Build & Deploy to Minikube') {
             steps {
                 sh """
+                # Build Docker image
+                docker build -t testjenkins:latest .
+
+                # Load image into Minikube
+                minikube image load testjenkins:latest
+
+                # Apply Kubernetes manifests
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
                 """
