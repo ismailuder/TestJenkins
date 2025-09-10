@@ -15,7 +15,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    docker.image('mcr.microsoft.com/dotnet/sdk:7.0').inside {
+                    docker.image('mcr.microsoft.com/dotnet/sdk:8.0').inside {
                         withSonarQubeEnv('SONARQUBE') {
                             sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj'
                             sh 'dotnet build src/TestJenkins/TestJenkins.csproj'
