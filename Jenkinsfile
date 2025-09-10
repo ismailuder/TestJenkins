@@ -14,7 +14,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('MySonarQube') {
+                withSonarQubeEnv('SONARQUBE') {
                     sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj'
                     sh 'dotnet build src/TestJenkins/TestJenkins.csproj'
                     sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
