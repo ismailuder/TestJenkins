@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    environment {
+        SONARQUBE = credentials('test') // Jenkins'te eklediğin SonarQube token ID
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/kullanici/proje.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('MySonarQube') {
+                    sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE'
+                    sh 'dotnet build src/TestJenkins'
+                    sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
+                }
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'dotnet test src/TestJenkins'
+            }
+        }
+
+        stage('Deploy to Minikube') {
+            steps {
+                sh """
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+                """
+            }
+        }
+    }
+}
