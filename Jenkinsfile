@@ -8,10 +8,10 @@ pipeline {
 
     stages {
         stage('Checkout SCM') {
-            steps {
-                checkout scm
-            }
-        }
+			steps {
+				git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'main'
+			}
+		}
 
         stage('Prepare SonarScanner') {
             steps {
