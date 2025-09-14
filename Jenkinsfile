@@ -16,10 +16,7 @@ pipeline {
         stage('Prepare SonarScanner') {
             steps {
                 script {
-                    // Geçici dizini temizle ve oluştur
                     sh 'rm -rf $TEMP_TOOLS && mkdir -p $TEMP_TOOLS'
-
-                    // Yalnızca geçici dizine yükle
                     sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0'
                 }
             }
