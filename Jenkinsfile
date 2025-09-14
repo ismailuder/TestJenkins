@@ -16,12 +16,11 @@ pipeline {
         stage('Prepare SonarScanner') {
             steps {
                 script {
-                    // Geçici dizini temizle
-                    sh 'rm -rf $TEMP_TOOLS'
-                    sh 'mkdir -p $TEMP_TOOLS'
+                    // Geçici dizini temizle ve oluştur
+                    sh 'rm -rf $TEMP_TOOLS && mkdir -p $TEMP_TOOLS'
 
-                    // dotnet-sonarscanner'ı sadece geçici dizine yükle
-                    sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0 --ignore-failed-sources'
+                    // Yalnızca geçici dizine yükle
+                    sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0'
                 }
             }
         }
@@ -36,12 +35,6 @@ pipeline {
                         dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
                     '''
                 }
-            }
-        }
-
-        stage('Docker Build & Deploy to Minikube') {
-            steps {
-                echo "Bu adım build başarılıysa çalışır"
             }
         }
     }
