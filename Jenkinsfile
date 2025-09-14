@@ -41,6 +41,14 @@ pipeline {
                 sh 'kubectl get nodes'
             }
         }
+
+        stage('Deploy to Prod') {
+            steps {
+                echo 'Prod ortamına deploy ediliyor...'
+                // Burada k8s manifest dosyanın yolu ve namespace’i belirt
+                sh 'kubectl apply -f k8s/deployment.yaml -n prod'
+            }
+        }
     }
 
     post {
