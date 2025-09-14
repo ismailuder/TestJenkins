@@ -2,45 +2,46 @@ pipeline {
     agent any
 
     environment {
-        DOTNET_CLI_HOME = '/var/jenkins_home'
-        PATH = "/usr/share/dotnet:/root/.dotnet/tools:${env.PATH}"
+        SONAR_TOKEN = credentials('SONAR_TOKEN') // Jenkins credential ID
+        DOTNET_TOOLS_PATH = "$HOME/.dotnet/tools"
+        DOTNET_CLI_HOME = "$HOME"
+    }
+
+    options {
+        // Workspace'i her build başında temizle
+        skipDefaultCheckout()
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Check Files') {
-            steps {
-                sh 'ls -R $WORKSPACE'
+                deleteDir() // Workspace temizliği
+                git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'master'
             }
         }
 
         stage('Build, Test & SonarQube') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withEnv(["PATH=${DOTNET_TOOLS_PATH}:$PATH", "DOTNET_CLI_HOME=${DOTNET_CLI_HOME}"]) {
                     script {
-                        def projectDir = "${env.WORKSPACE}/TestJenkins"
+                        // Eski scanner ve .sonarqube cache'ini temizle
+                        sh '''
+                            rm -rf $HOME/.dotnet/tools/.store/dotnet-sonarscanner
+                            rm -rf .sonarqube
+                        '''
 
-                        // SonarScanner begin
-                        sh """
-                            export PATH=$PATH
-                            export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
-                            cd ${projectDir}
-                            /tmp/dotnet-tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
-                        """
+                        // Dotnet SonarScanner'ı yükle (10.3)
+                        sh '''
+                            dotnet tool install --tool-path $HOME/.dotnet/tools dotnet-sonarscanner --version 10.3.0
+                        '''
 
-                        // Build
-                        sh "dotnet build ${projectDir}/TestJenkins.csproj -c Release"
-
-                        // Test
-                        sh "dotnet test ${projectDir}/TestJenkins.csproj -c Release"
-
-                        // SonarScanner end
-                        sh "/tmp/dotnet-tools/dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN"
+                        // SonarQube analizi
+                        sh '''
+                            $HOME/.dotnet/tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
+                            dotnet build TestJenkins/TestJenkins.csproj -c Release
+                            dotnet test TestJenkins/TestJenkins.csproj -c Release
+                            $HOME/.dotnet/tools/dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
+                        '''
                     }
                 }
             }
@@ -48,17 +49,17 @@ pipeline {
 
         stage('Docker Build & Deploy to Minikube') {
             steps {
-                echo 'Skipping Docker stage for now due to earlier failures'
+                echo 'Docker Build & Deploy stage skipped in case of earlier failure'
             }
         }
     }
 
     post {
-        failure {
-            echo "Pipeline failed ❌"
-        }
         success {
-            echo "Pipeline succeeded ✅"
+            echo 'Pipeline succeeded ✅'
+        }
+        failure {
+            echo 'Pipeline failed ❌'
         }
     }
 }
