@@ -9,8 +9,7 @@ pipeline {
     stages {
         stage('Checkout SCM') {
             steps {
-				deleteDir()  // workspace temizliği
-                git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'master'
+                checkout scm
             }
         }
 
