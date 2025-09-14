@@ -16,8 +16,7 @@ pipeline {
 
         stage('Build, Test & SonarQube') {
             steps {
-                 sh '''
-					export PATH=/var/jenkins_home/.dotnet:$PATH
+                sh '''
 					dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
 					dotnet build src/TestJenkins/TestJenkins.csproj -c Release
 					dotnet test src/TestJenkins/TestJenkins.csproj -c Release
