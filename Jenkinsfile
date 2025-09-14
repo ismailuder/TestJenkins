@@ -16,9 +16,7 @@ pipeline {
         stage('Prepare SonarScanner') {
             steps {
                 script {
-                    // Geçici dizini temizle ve oluştur
                     sh 'rm -rf $TEMP_TOOLS && mkdir -p $TEMP_TOOLS'
-                    // Dotnet SonarScanner'ı yükle
                     sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0'
                 }
             }
@@ -40,9 +38,12 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    // Jenkins container'ından Minikube Docker daemon'a bağlanmak için
-                    sh 'eval $(minikube -p minikube docker-env) || true'
-                    sh 'docker build -t testjenkins:latest .'
+                    // Dockerfile'ın bulunduğu alt klasöre geçiyoruz
+                    dir('TestJenkins') {
+                        // Minikube Docker daemon ile bağlantı
+                        sh 'eval $(minikube -p minikube docker-env) || true'
+                        sh 'docker build -t testjenkins:latest .'
+                    }
                 }
             }
         }
@@ -50,8 +51,10 @@ pipeline {
         stage('Deploy to Minikube') {
             steps {
                 script {
-                    sh 'kubectl apply -f TestJenkins/k8s/deployment.yaml'
-                    sh 'kubectl apply -f TestJenkins/k8s/service.yaml'
+                    dir('TestJenkins') {
+                        sh 'kubectl apply -f k8s/deployment.yaml'
+                        sh 'kubectl apply -f k8s/service.yaml'
+                    }
                 }
             }
         }
