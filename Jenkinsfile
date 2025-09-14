@@ -46,7 +46,7 @@ pipeline {
             steps {
                 echo 'Prod ortamına deploy ediliyor...'
                 // Burada k8s manifest dosyanın yolu ve namespace’i belirt
-                sh kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod
+                sh 'kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod'
             }
         }
     }
