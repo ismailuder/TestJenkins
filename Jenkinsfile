@@ -13,14 +13,14 @@ pipeline {
             }
         }
 
-        stage('Clean & Prepare') {
+        stage('Prepare SonarScanner') {
             steps {
                 script {
-                    // Önce geçici dizini temizle
+                    // Geçici dizini temizle
                     sh 'rm -rf $TEMP_TOOLS'
                     sh 'mkdir -p $TEMP_TOOLS'
 
-                    // Geçici dizine dotnet-sonarscanner yükle
+                    // dotnet-sonarscanner'ı sadece geçici dizine yükle
                     sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0 --ignore-failed-sources'
                 }
             }
@@ -47,11 +47,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo "Pipeline başarılı ✅"
-        }
-        failure {
-            echo "Pipeline başarısız ❌"
-        }
+        success { echo "Pipeline başarılı ✅" }
+        failure { echo "Pipeline başarısız ❌" }
     }
 }
