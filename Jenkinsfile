@@ -2,17 +2,15 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE = credentials('sonar-token')  // Jenkins içinde oluşturduğun token
-        IMAGE_NAME = "testjenkins:latest"
-        KUBE_CONFIG = "/home/jenkins/.kube/config"
-        DOTNET_CLI_HOME = "/var/jenkins_home"  // Sonar için gerekli
-        PATH = "/usr/share/dotnet:/root/.dotnet/tools:$PATH"
+        SONARQUBE = credentials('SonarQubeToken') // Jenkins'deki token ID
+        DOTNET_CLI_HOME = '/var/jenkins_home'
+        PATH = "/usr/share/dotnet:/root/.dotnet/tools:${env.PATH}"
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                git branch: 'master', url: 'https://github.com/ismailuder/TestJenkins.git'
+                checkout scm
             }
         }
 
@@ -25,38 +23,42 @@ pipeline {
         stage('Build, Test & SonarQube') {
             steps {
                 script {
-                    // Repo içindeki proje path'ini kontrol et
-                    def projectDir = "${WORKSPACE}/src/TestJenkins" // Eğer csproj başka yerdeyse burayı değiştir
+                    // Proje dizini
+                    def projectDir = "${env.WORKSPACE}/TestJenkins"
 
+                    // SonarScanner begin
                     sh """
+                        export PATH=$PATH
+                        export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
                         cd ${projectDir}
-                        dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
-                        dotnet build TestJenkins.csproj -c Release
-                        dotnet test TestJenkins.csproj -c Release
-                        dotnet sonarscanner end /d:sonar.login=$SONARQUBE
+                        dotnet sonarscanner begin /k:TestJenkins /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
                     """
+
+                    // Build
+                    sh "dotnet build ${projectDir}/TestJenkins.csproj -c Release"
+
+                    // Test
+                    sh "dotnet test ${projectDir}/TestJenkins.csproj -c Release"
+
+                    // SonarScanner end
+                    sh "dotnet sonarscanner end /d:sonar.login=$SONARQUBE"
                 }
             }
         }
 
         stage('Docker Build & Deploy to Minikube') {
             steps {
-                sh """
-                    docker build -t $IMAGE_NAME .
-                    minikube image load $IMAGE_NAME
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
-                """
+                echo 'Skipping Docker stage for now due to earlier failures'
             }
         }
     }
 
     post {
-        success {
-            echo "Pipeline completed successfully! 🎉"
-        }
         failure {
-            echo "Pipeline failed. ❌"
+            echo "Pipeline failed ❌"
+        }
+        success {
+            echo "Pipeline succeeded ✅"
         }
     }
 }
