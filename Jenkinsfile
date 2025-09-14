@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE = credentials('SonarQubeToken') // Jenkins'deki token ID
+        SONARQUBE = credentials('sonar-token') // Jenkins'deki token ID
         DOTNET_CLI_HOME = '/var/jenkins_home'
         PATH = "/usr/share/dotnet:/root/.dotnet/tools:${env.PATH}"
     }
