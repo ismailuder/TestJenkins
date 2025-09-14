@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testjenkins-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testjenkins
+  template:
+    metadata:
+      labels:
+        app: testjenkins
+    spec:
+      containers:
+      - name: testjenkins
+        image: testjenkins:latest   # local image tag
+        ports:
+        - containerPort: 80
