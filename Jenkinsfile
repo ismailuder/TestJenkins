@@ -5,8 +5,13 @@ pipeline {
         TEMP_TOOLS = "${WORKSPACE}/.temp_dotnet_tools"
         PATH = "${TEMP_TOOLS}:${env.PATH}"
     }
-
     stages {
+		stage('Clean Workspace') {
+			steps {
+				deleteDir()
+			}
+		}
+	
         stage('Checkout SCM') {
             steps {
                 checkout scm
