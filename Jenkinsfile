@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE = credentials('sonar-token')  // Jenkins içinde oluşturduğun SonarQube token
+        SONARQUBE = credentials('sonar-token')  // Jenkins içinde oluşturduğun token
+        IMAGE_NAME = "testjenkins:latest"
         KUBE_CONFIG = "/home/jenkins/.kube/config"
     }
 
@@ -16,21 +17,19 @@ pipeline {
         stage('Build, Test & SonarQube') {
             steps {
                 sh '''
-                    # .NET SDK zaten container içinde mevcut, Docker run gerek yok
-                    dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
-                    dotnet build src/TestJenkins/TestJenkins.csproj -c Release
-                    dotnet test src/TestJenkins/TestJenkins.csproj -c Release
-                    dotnet sonarscanner end /d:sonar.login=$SONARQUBE
+                    $DOTNET_ROOT/dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
+                    $DOTNET_ROOT/dotnet build src/TestJenkins/TestJenkins.csproj -c Release
+                    $DOTNET_ROOT/dotnet test src/TestJenkins/TestJenkins.csproj -c Release
+                    $DOTNET_ROOT/dotnet sonarscanner end /d:sonar.login=$SONARQUBE
                 '''
             }
         }
 
-        stage('Deploy to Minikube') {
+        stage('Docker Build & Deploy to Minikube') {
             steps {
                 sh '''
-                    # Docker build gerekirse minikube image load ile yükle
-                    docker build -t testjenkins:latest .
-                    minikube image load testjenkins:latest
+                    docker build -t $IMAGE_NAME .
+                    minikube image load $IMAGE_NAME
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/service.yaml
                 '''
