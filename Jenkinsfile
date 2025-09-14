@@ -4,6 +4,7 @@ pipeline {
     environment {
         TEMP_TOOLS = "${WORKSPACE}/.temp_dotnet_tools"
         PATH = "${TEMP_TOOLS}:${env.PATH}"
+        DOCKER_HOST = "unix:///var/run/docker.sock" // Host Docker'a erişim
     }
 
     stages {
@@ -37,11 +38,8 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                script {
-                    // Dockerfile'ın bulunduğu alt klasöre geçiyoruz
-                    dir('TestJenkins') {
-                        // Minikube Docker daemon ile bağlantı
-                        sh 'eval $(minikube -p minikube docker-env) || true'
+                dir('TestJenkins') {
+                    script {
                         sh 'docker build -t testjenkins:latest .'
                     }
                 }
@@ -50,10 +48,11 @@ pipeline {
 
         stage('Deploy to Minikube') {
             steps {
-                script {
-                    dir('TestJenkins') {
-                        sh 'kubectl apply -f k8s/deployment.yaml'
-                        sh 'kubectl apply -f k8s/service.yaml'
+                dir('TestJenkins/k8s') {
+                    script {
+                        // Mevcut Jenkins container içinde mount edilmiş kubeconfig kullanılıyor
+                        sh 'kubectl apply -f deployment.yaml'
+                        sh 'kubectl apply -f service.yaml'
                     }
                 }
             }
