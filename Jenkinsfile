@@ -34,6 +34,13 @@ pipeline {
                 }
             }
         }
+        
+        stage('Kubernetes Node Check') {
+            steps {
+                echo 'Kubernetes Node Durumu Kontrol Ediliyor...'
+                sh 'kubectl get nodes'
+            }
+        }
     }
 
     post {
