@@ -1,66 +1,63 @@
 pipeline {
     agent any
-
     environment {
-        TEMP_TOOLS = "${WORKSPACE}/.temp_dotnet_tools"
-        PATH = "${TEMP_TOOLS}:${env.PATH}"
-        DOCKER_HOST = "unix:///var/run/docker.sock" // Host Docker'a erişim
+        SONAR_TOKEN = credentials('SONAR_TOKEN')  // Jenkins Credentials
     }
-
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'master', url: 'https://github.com/ismailuder/TestJenkins.git'
             }
         }
 
         stage('Prepare SonarScanner') {
             steps {
-                script {
-                    sh 'rm -rf $TEMP_TOOLS && mkdir -p $TEMP_TOOLS'
-                    sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0'
-                }
+                sh '''
+                    mkdir -p .temp_dotnet_tools
+                    dotnet tool install --tool-path .temp_dotnet_tools dotnet-sonarscanner --version 10.3.0
+                '''
             }
         }
 
         stage('Build, Test & SonarQube') {
             steps {
-                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                        dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
-                        dotnet build TestJenkins/TestJenkins.csproj -c Release
-                        dotnet test TestJenkins/TestJenkins.csproj -c Release
-                        dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
-                    '''
-                }
+                sh '''
+                    ./.temp_dotnet_tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
+                    dotnet build TestJenkins/TestJenkins.csproj -c Release
+                    dotnet test TestJenkins/TestJenkins.csproj -c Release
+                    ./.temp_dotnet_tools/dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
+                '''
             }
         }
 
         stage('Docker Build') {
             steps {
                 dir('TestJenkins') {
-                    script {
-                        sh 'docker build -t testjenkins:latest .'
-                    }
+                    sh 'docker build -t testjenkins:latest .'
                 }
             }
         }
 
         stage('Deploy to Minikube') {
             steps {
-                dir('TestJenkins/k8s') {
-                    script {
-                        // Mevcut Jenkins container içinde mount edilmiş kubeconfig kullanılıyor
-                        sh 'kubectl apply -f deployment.yaml'
-                        sh 'kubectl apply -f service.yaml'
-                    }
-                }
+                sh '''
+                    # Minikube docker environment kullan
+                    eval $(minikube -p minikube docker-env)
+
+                    # Image deploy için
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                '''
             }
         }
     }
 
     post {
-        success { echo "Pipeline başarılı ✅" }
-        failure { echo "Pipeline başarısız ❌" }
+        failure {
+            echo "Pipeline başarısız ❌"
+        }
+        success {
+            echo "Pipeline başarıyla tamamlandı ✅"
+        }
     }
 }

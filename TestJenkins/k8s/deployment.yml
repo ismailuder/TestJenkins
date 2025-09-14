@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testjenkins-deployment
+  name: testjenkins
 spec:
   replicas: 1
   selector:
@@ -13,7 +13,7 @@ spec:
         app: testjenkins
     spec:
       containers:
-      - name: testjenkins
-        image: testjenkins:latest
-        ports:
-        - containerPort: 80
+        - name: testjenkins
+          image: testjenkins:latest
+          ports:
+            - containerPort: 80
