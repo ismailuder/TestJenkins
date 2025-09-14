@@ -26,11 +26,13 @@ pipeline {
                     def projectDir = "${env.WORKSPACE}/TestJenkins"
 
                     sh """
-                        # PATH ve DOTNET_CLI_HOME ayarları
                         export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
                         export PATH=/usr/share/dotnet:/root/.dotnet/tools:\$PATH
 
                         cd ${projectDir}
+
+                        # SonarScanner için execute izni
+                        chmod +x /root/.dotnet/tools/dotnet-sonarscanner
 
                         echo "Starting SonarScanner..."
                         /root/.dotnet/tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=${SONARQUBE} /d:sonar.host.url=http://sonarqube:9000
