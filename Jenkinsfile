@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE = credentials('sonar-token') // Jenkins'deki token ID
         DOTNET_CLI_HOME = '/var/jenkins_home'
         PATH = "/usr/share/dotnet:/root/.dotnet/tools:${env.PATH}"
     }
@@ -22,26 +21,27 @@ pipeline {
 
         stage('Build, Test & SonarQube') {
             steps {
-                script {
-                    def projectDir = "${env.WORKSPACE}/TestJenkins"
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    script {
+                        def projectDir = "${env.WORKSPACE}/TestJenkins"
 
-                    // SonarScanner begin
-                    sh """
-                        export PATH=$PATH
-                        export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
-                        cd ${projectDir}
-                        echo "Starting SonarScanner..."
-                        dotnet sonarscanner begin /k:TestJenkins /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
-                    """
+                        // SonarScanner begin
+                        sh """
+                            export PATH=$PATH
+                            export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
+                            cd ${projectDir}
+                            /tmp/dotnet-tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
+                        """
 
-                    // Build
-                    sh "dotnet build ${projectDir}/TestJenkins.csproj -c Release"
+                        // Build
+                        sh "dotnet build ${projectDir}/TestJenkins.csproj -c Release"
 
-                    // Test
-                    sh "dotnet test ${projectDir}/TestJenkins.csproj -c Release"
+                        // Test
+                        sh "dotnet test ${projectDir}/TestJenkins.csproj -c Release"
 
-                    // SonarScanner end
-                    sh "dotnet sonarscanner end /d:sonar.login=$SONARQUBE"
+                        // SonarScanner end
+                        sh "/tmp/dotnet-tools/dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN"
+                    }
                 }
             }
         }
