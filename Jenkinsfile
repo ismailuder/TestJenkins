@@ -25,27 +25,23 @@ pipeline {
                 script {
                     def projectDir = "${env.WORKSPACE}/TestJenkins"
 
+                    // SonarScanner begin
                     sh """
+                        export PATH=$PATH
                         export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
-                        export PATH=/usr/share/dotnet:/root/.dotnet/tools:\$PATH
-
                         cd ${projectDir}
-
-                        # SonarScanner için execute izni
-                        chmod +x /root/.dotnet/tools/dotnet-sonarscanner
-
                         echo "Starting SonarScanner..."
-                        /root/.dotnet/tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=${SONARQUBE} /d:sonar.host.url=http://sonarqube:9000
-
-                        echo "Building project..."
-                        dotnet build TestJenkins.csproj -c Release
-
-                        echo "Running tests..."
-                        dotnet test TestJenkins.csproj -c Release
-
-                        echo "Ending SonarScanner..."
-                        /root/.dotnet/tools/dotnet-sonarscanner end /d:sonar.login=${SONARQUBE}
+                        dotnet sonarscanner begin /k:TestJenkins /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
                     """
+
+                    // Build
+                    sh "dotnet build ${projectDir}/TestJenkins.csproj -c Release"
+
+                    // Test
+                    sh "dotnet test ${projectDir}/TestJenkins.csproj -c Release"
+
+                    // SonarScanner end
+                    sh "dotnet sonarscanner end /d:sonar.login=$SONARQUBE"
                 }
             }
         }
