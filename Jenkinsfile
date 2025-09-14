@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        DOTNET_TOOLS = "/var/jenkins_home/.dotnet/tools"
-        PATH = "${DOTNET_TOOLS}:${env.PATH}"
+        TEMP_TOOLS = "${WORKSPACE}/.temp_dotnet_tools"
+        PATH = "${TEMP_TOOLS}:${env.PATH}"
     }
 
     stages {
@@ -16,14 +16,12 @@ pipeline {
         stage('Clean & Prepare') {
             steps {
                 script {
-                    // Önce eski SonarScanner kalıntılarını temizle
-                    sh 'rm -rf $DOTNET_TOOLS/dotnet-sonarscanner'
-                    sh 'rm -rf $DOTNET_TOOLS/.store/dotnet-sonarscanner'
+                    // Önce geçici dizini temizle
+                    sh 'rm -rf $TEMP_TOOLS'
+                    sh 'mkdir -p $TEMP_TOOLS'
 
-                    // SonarScanner yüklü değilse yükle
-                    if (!fileExists("${DOTNET_TOOLS}/dotnet-sonarscanner")) {
-                        sh 'dotnet tool install --tool-path $DOTNET_TOOLS dotnet-sonarscanner --version 10.3.0'
-                    }
+                    // Geçici dizine dotnet-sonarscanner yükle
+                    sh 'dotnet tool install --tool-path $TEMP_TOOLS dotnet-sonarscanner --version 10.3.0 --ignore-failed-sources'
                 }
             }
         }
@@ -32,10 +30,10 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                     sh '''
-                        dotnet sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
+                        dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
                         dotnet build TestJenkins/TestJenkins.csproj -c Release
                         dotnet test TestJenkins/TestJenkins.csproj -c Release
-                        dotnet sonarscanner end /d:sonar.login=$SONAR_TOKEN
+                        dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
                     '''
                 }
             }
@@ -43,8 +41,7 @@ pipeline {
 
         stage('Docker Build & Deploy to Minikube') {
             steps {
-                echo "Bu adım sadece build başarılıysa çalışır"
-                // Burada docker build & kubectl apply komutlarını ekleyebilirsin
+                echo "Bu adım build başarılıysa çalışır"
             }
         }
     }
