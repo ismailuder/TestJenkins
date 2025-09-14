@@ -8,10 +8,10 @@ pipeline {
 
     stages {
         stage('Checkout SCM') {
-			steps {
-				git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'master'
-			}
-		}
+            steps {
+                git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'master'
+            }
+        }
 
         stage('Prepare SonarScanner') {
             steps {
@@ -41,21 +41,6 @@ pipeline {
                 sh 'docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins'
             }
         }
-
-        // Opsiyonel: Docker Hub’a push etmek istersen bu kısmı açabilirsin
-        /*
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker tag testjenkins:latest your-dockerhub-username/testjenkins:latest
-                        docker push your-dockerhub-username/testjenkins:latest
-                    '''
-                }
-            }
-        }
-        */
 
         stage('Kubernetes Node Check') {
             steps {
