@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout SCM') {
 			steps {
-				git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'main'
+				git url: 'https://github.com/ismailuder/TestJenkins.git', branch: 'master'
 			}
 		}
 
