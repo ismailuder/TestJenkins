@@ -28,9 +28,10 @@ pipeline {
             }
         }
 
-        stage('Docker Build & Deploy to Minikube') {
+        stage('Docker Build & Minikube Deploy') {
             steps {
                 sh '''
+                    # Jenkins container içinden host Docker ve Minikube kullanımı
                     docker build -t $IMAGE_NAME .
                     minikube image load $IMAGE_NAME
                     kubectl apply -f k8s/deployment.yaml
@@ -42,10 +43,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully! 🎉"
+            echo "Pipeline başarıyla tamamlandı 🎉"
         }
         failure {
-            echo "Pipeline failed. ❌"
+            echo "Pipeline başarısız ❌"
         }
     }
 }
