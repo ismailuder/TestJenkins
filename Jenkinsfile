@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE = credentials('sonar-token') // SonarQube token
+        SONARQUBE = credentials('sonar-token')
         IMAGE_NAME = "testjenkins:latest"
     }
 
@@ -15,12 +15,15 @@ pipeline {
 
         stage('Build, Test & SonarQube') {
             steps {
-                // Dotnet build/test/sonarscanner direkt container içinde çalıştırılıyor
                 sh '''
-                    dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /s:src/TestJenkins/TestJenkins.csproj
-                    dotnet build src/TestJenkins/TestJenkins.csproj -c Release
-                    dotnet test src/TestJenkins/TestJenkins.csproj -c Release
-                    dotnet sonarscanner end /d:sonar.login=$SONARQUBE
+                    docker run --rm \
+                        --network dev-network \
+                        -v $PWD:/app -w /app mcr.microsoft.com/dotnet/sdk:8.0 bash -c "
+                            dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000 &&
+                            dotnet build src/TestJenkins/TestJenkins.csproj -c Release &&
+                            dotnet test src/TestJenkins/TestJenkins.csproj -c Release &&
+                            dotnet sonarscanner end /d:sonar.login=$SONARQUBE
+                        "
                 '''
             }
         }
