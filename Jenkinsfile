@@ -16,12 +16,13 @@ pipeline {
 
         stage('Build, Test & SonarQube') {
             steps {
-                sh '''
-                    $DOTNET_ROOT/dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
-                    $DOTNET_ROOT/dotnet build src/TestJenkins/TestJenkins.csproj -c Release
-                    $DOTNET_ROOT/dotnet test src/TestJenkins/TestJenkins.csproj -c Release
-                    $DOTNET_ROOT/dotnet sonarscanner end /d:sonar.login=$SONARQUBE
-                '''
+                 sh '''
+					export PATH=/var/jenkins_home/.dotnet:$PATH
+					dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
+					dotnet build src/TestJenkins/TestJenkins.csproj -c Release
+					dotnet test src/TestJenkins/TestJenkins.csproj -c Release
+					dotnet sonarscanner end /d:sonar.login=$SONARQUBE
+				'''
             }
         }
 
