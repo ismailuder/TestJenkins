@@ -26,21 +26,23 @@ pipeline {
                     def projectDir = "${env.WORKSPACE}/TestJenkins"
 
                     sh """
-                        export PATH=$PATH
+                        # PATH ve DOTNET_CLI_HOME ayarları
                         export DOTNET_CLI_HOME=$DOTNET_CLI_HOME
+                        export PATH=/usr/share/dotnet:/root/.dotnet/tools:\$PATH
+
                         cd ${projectDir}
-                        
+
                         echo "Starting SonarScanner..."
-                        dotnet sonarscanner begin /k:TestJenkins /d:sonar.login=${SONARQUBE} /d:sonar.host.url=http://sonarqube:9000
-                        
+                        /root/.dotnet/tools/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=${SONARQUBE} /d:sonar.host.url=http://sonarqube:9000
+
                         echo "Building project..."
                         dotnet build TestJenkins.csproj -c Release
-                        
+
                         echo "Running tests..."
                         dotnet test TestJenkins.csproj -c Release
-                        
+
                         echo "Ending SonarScanner..."
-                        dotnet sonarscanner end /d:sonar.login=${SONARQUBE}
+                        /root/.dotnet/tools/dotnet-sonarscanner end /d:sonar.login=${SONARQUBE}
                     """
                 }
             }
@@ -48,7 +50,7 @@ pipeline {
 
         stage('Docker Build & Deploy to Minikube') {
             steps {
-                echo 'Skipping Docker stage for now'
+                echo 'Skipping Docker stage for now due to earlier failures'
             }
         }
     }
