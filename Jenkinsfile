@@ -34,7 +34,14 @@ pipeline {
                 }
             }
         }
-        
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Docker image build ediliyor...'
+                sh 'docker build -t testjenkins:latest .'
+            }
+        }
+
         stage('Kubernetes Node Check') {
             steps {
                 echo 'Kubernetes Node Durumu Kontrol Ediliyor...'
@@ -45,7 +52,6 @@ pipeline {
         stage('Deploy to Prod') {
             steps {
                 echo 'Prod ortamına deploy ediliyor...'
-                // Burada k8s manifest dosyanın yolu ve namespace’i belirt
                 sh 'kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod'
             }
         }
