@@ -5,7 +5,8 @@ pipeline {
         SONARQUBE = credentials('sonar-token')  // Jenkins içinde oluşturduğun token
         IMAGE_NAME = "testjenkins:latest"
         KUBE_CONFIG = "/home/jenkins/.kube/config"
-        DOTNET_TOOLS = "/root/.dotnet/tools"
+        DOTNET_ROOT = "/usr/share/dotnet"
+        PATH = "/usr/share/dotnet:/root/.dotnet/tools:$PATH"
     }
 
     stages {
@@ -18,7 +19,7 @@ pipeline {
         stage('Build, Test & SonarQube') {
             steps {
                 sh '''
-                    export PATH=$PATH:/usr/share/dotnet:$DOTNET_TOOLS
+                    export PATH=/usr/share/dotnet:/root/.dotnet/tools:$PATH
                     dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000
                     dotnet build src/TestJenkins/TestJenkins.csproj -c Release
                     dotnet test src/TestJenkins/TestJenkins.csproj -c Release
