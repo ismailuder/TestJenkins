@@ -1,9 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker { image 'mcr.microsoft.com/dotnet/sdk:8.0' }
+    }
 
     environment {
         SONARQUBE = credentials('sonar-token')
-        IMAGE_NAME = "testjenkins:latest"
     }
 
     stages {
@@ -15,24 +16,21 @@ pipeline {
 
         stage('Build, Test & SonarQube') {
             steps {
-                sh '''
-                    docker run --rm \
-                        --network dev-network \
-                        -v $PWD:/app -w /app mcr.microsoft.com/dotnet/sdk:8.0 bash -c "
-                            dotnet sonarscanner begin /k:'TestJenkins' /d:sonar.login=$SONARQUBE /d:sonar.host.url=http://sonarqube:9000 &&
-                            dotnet build src/TestJenkins/TestJenkins.csproj -c Release &&
-                            dotnet test src/TestJenkins/TestJenkins.csproj -c Release &&
-                            dotnet sonarscanner end /d:sonar.login=$SONARQUBE
-                        "
-                '''
+                withSonarQubeEnv('MySonarQube') {
+                    sh 'dotnet sonarscanner begin /k:"TestJenkins" /d:sonar.login=$SONARQUBE'
+                    sh 'dotnet build src/TestJenkins/TestJenkins.csproj -c Release'
+                    sh 'dotnet test src/TestJenkins/TestJenkins.csproj -c Release'
+                    sh 'dotnet sonarscanner end /d:sonar.login=$SONARQUBE'
+                }
             }
         }
 
         stage('Docker Build & Deploy to Minikube') {
+            agent { label 'docker' } // bu adım için ayrı agent belirleyebilirsin
             steps {
                 sh '''
-                    docker build -t $IMAGE_NAME .
-                    minikube image load $IMAGE_NAME
+                    docker build -t testjenkins:latest .
+                    minikube image load testjenkins:latest
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/service.yaml
                 '''
@@ -41,11 +39,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo "Pipeline completed successfully! 🎉"
-        }
-        failure {
-            echo "Pipeline failed. ❌"
-        }
+        success { echo "Pipeline completed successfully! 🎉" }
+        failure { echo "Pipeline failed. ❌" }
     }
 }
