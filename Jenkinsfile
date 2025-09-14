@@ -38,7 +38,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Docker image build ediliyor...'
-                sh 'docker build -t testjenkins:latest .'
+                sh 'docker build -t testjenkins:latest -f TestJenkins/TestJenkins/Dockerfile TestJenkins/TestJenkins'
             }
         }
 
