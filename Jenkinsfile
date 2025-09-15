@@ -7,9 +7,9 @@ pipeline {
     }
 
     stages {
-        stage('Clean Workspace') {
+        stage('Checkout SCM') {
             steps {
-                deleteDir()
+                checkout scm
             }
         }
 
@@ -32,27 +32,6 @@ pipeline {
                         dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
                     '''
                 }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                echo 'Docker image build ediliyor...'
-                sh 'docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins'
-            }
-        }
-
-        stage('Kubernetes Node Check') {
-            steps {
-                echo 'Kubernetes Node Durumu Kontrol Ediliyor...'
-                sh 'kubectl get nodes'
-            }
-        }
-
-        stage('Deploy to Prod') {
-            steps {
-                echo 'Prod ortamına deploy ediliyor...'
-                sh 'kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod'
             }
         }
     }
