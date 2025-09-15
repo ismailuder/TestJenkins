@@ -34,10 +34,36 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                echo 'Kubernetes’e deploy ediliyor...'
+                sh '''
+                    # Docker image build
+                    docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins
+
+                    # Namespace varsa oluştur
+                    kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
+
+                    # Deployment apply
+                    kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod
+
+                    # Service apply
+                    kubectl apply -f TestJenkins/k8s/service.yaml -n prod
+
+                    # Pod ve Service durumu kontrolü
+                    kubectl get pods -n prod
+                    kubectl get svc -n prod
+                '''
+            }
+        }
     }
 
     post {
-        success { echo "Pipeline başarılı ✅" }
+        success { 
+            echo "Pipeline başarılı ✅"
+            echo "Local erişim: http://localhost:30007" 
+        }
         failure { echo "Pipeline başarısız ❌" }
     }
 }

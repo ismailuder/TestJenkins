@@ -15,6 +15,6 @@ spec:
       containers:
       - name: testjenkins
         image: testjenkins:latest
-        imagePullPolicy: Never        # <-- BU SATIRI EKLE
+        imagePullPolicy: Never
         ports:
         - containerPort: 80
