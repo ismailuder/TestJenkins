@@ -35,23 +35,35 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh '''
+                        echo "Docker image build ediliyor..."
+                        docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                    # Docker image build
-                    docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins
+                script {
+                    sh '''
+                        echo "Kubernetes'e deploy ediliyor..."
 
-                    # Namespace oluştur
-                    kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
+                        # Namespace varsa oluştur
+                        kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
 
-                    # Deployment ve Service apply
-                    kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod
-                    kubectl apply -f TestJenkins/k8s/service.yaml -n prod
+                        # Deployment ve Service apply
+                        kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod
+                        kubectl apply -f TestJenkins/k8s/service.yaml -n prod
 
-                    # Pod ve Service kontrol
-                    kubectl get pods -n prod
-                    kubectl get svc -n prod
-                '''
+                        # Durumu kontrol et
+                        kubectl get pods -n prod
+                        kubectl get svc -n prod
+                    '''
+                }
             }
         }
     }
