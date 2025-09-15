@@ -37,21 +37,18 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo 'Kubernetes’e deploy ediliyor...'
                 sh '''
                     # Docker image build
                     docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins
 
-                    # Namespace varsa oluştur
+                    # Namespace oluştur
                     kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
 
-                    # Deployment apply
+                    # Deployment ve Service apply
                     kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod
-
-                    # Service apply
                     kubectl apply -f TestJenkins/k8s/service.yaml -n prod
 
-                    # Pod ve Service durumu kontrolü
+                    # Pod ve Service kontrol
                     kubectl get pods -n prod
                     kubectl get svc -n prod
                 '''
@@ -60,10 +57,7 @@ pipeline {
     }
 
     post {
-        success { 
-            echo "Pipeline başarılı ✅"
-            echo "Local erişim: http://localhost:30007" 
-        }
+        success { echo "Pipeline başarılı ✅" }
         failure { echo "Pipeline başarısız ❌" }
     }
 }
