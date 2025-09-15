@@ -13,14 +13,6 @@ pipeline {
             }
         }
 
-        stage('Checkout Repository') {
-            steps {
-                // Repo’yu direkt klonluyor
-                git branch: 'master',
-                    url: 'https://github.com/ismailuder/TestJenkins.git'
-            }
-        }
-
         stage('Prepare SonarScanner') {
             steps {
                 script {
