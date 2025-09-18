@@ -13,8 +13,8 @@ spec:
         app: testjenkins
     spec:
       containers:
-      - name: testjenkins
-        image: testjenkins:latest
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 80
+        - name: testjenkins
+          image: testjenkins:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80

@@ -4,6 +4,10 @@ pipeline {
     environment {
         TEMP_TOOLS = "${WORKSPACE}/.temp_dotnet_tools"
         PATH = "${TEMP_TOOLS}:${env.PATH}"
+        DOCKER_IMAGE = "testjenkins:latest"
+        KUBE_DEPLOYMENT = "testjenkins-deployment"
+        KUBE_SERVICE = "testjenkins-service"
+        NAMESPACE = "default"
     }
 
     stages {
@@ -13,7 +17,7 @@ pipeline {
             }
         }
 
-        stage('Prepare SonarScanner') {
+        stage('Prepare .NET SonarScanner') {
             steps {
                 script {
                     sh 'rm -rf $TEMP_TOOLS && mkdir -p $TEMP_TOOLS'
@@ -22,14 +26,14 @@ pipeline {
             }
         }
 
-        stage('Build, Test & SonarQube') {
+        stage('Build & Test & SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                     sh '''
-                        dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
+                        $TEMP_TOOLS/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
                         dotnet build TestJenkins/TestJenkins.csproj -c Release
                         dotnet test TestJenkins/TestJenkins.csproj -c Release
-                        dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
+                        $TEMP_TOOLS/dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
                     '''
                 }
             }
@@ -37,39 +41,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh '''
-                        echo "Docker image build ediliyor..."
-                        docker build -t testjenkins:latest -f TestJenkins/Dockerfile TestJenkins
-                    '''
-                }
+                sh "docker build -t $DOCKER_IMAGE ."
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Push to Local Kubernetes') {
             steps {
-                script {
-                    sh '''
-                        echo "Kubernetes'e deploy ediliyor..."
-
-                        # Namespace varsa oluştur
-                        kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
-
-                        # Deployment ve Service apply
-                        kubectl apply -f TestJenkins/k8s/deployment.yaml -n prod
-                        kubectl apply -f TestJenkins/k8s/service.yaml -n prod
-
-                        # Durumu kontrol et
-                        kubectl get pods -n prod
-                        kubectl get svc -n prod
-                    '''
-                }
+                sh '''
+                    # Docker image lokalde hazır, Kubernetes deployment update
+                    kubectl apply -f k8s/testjenkins-deployment.yaml
+                    kubectl apply -f k8s/testjenkins-service.yaml
+                '''
             }
         }
     }
 
     post {
-        success { echo "Pipeline başarılı ✅" }
-        failure { echo "Pipeline başarısız ❌" }
+        success {
+            echo "Pipeline başarılı ✅"
+        }
+        failure {
+            echo "Pipeline başarısız ❌"
+        }
     }
 }
