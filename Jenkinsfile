@@ -41,8 +41,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $DOCKER_IMAGE ."
-            }
+				script {
+					// Dockerfile projenin alt klasöründe
+					sh 'docker build -f TestJenkins/Dockerfile -t testjenkins:latest .'
+				}
+			}
         }
 
         stage('Push to Local Kubernetes') {
