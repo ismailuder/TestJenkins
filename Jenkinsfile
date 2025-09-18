@@ -37,8 +37,10 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-             steps {
-				sh 'docker build -t testjenkins:latest /mnt/c/Users/Asus/source/repos/TestJenkins/TestJenkins'
+            steps {
+				dir("${env.WORKSPACE}") {
+				sh 'docker build -t testjenkins:latest .'
+        }
 			}
         }
 
