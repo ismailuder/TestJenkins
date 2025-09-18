@@ -37,9 +37,9 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t testjenkins:latest .'
-            }
+             steps {
+				sh 'docker build -t testjenkins:latest /mnt/c/Users/Asus/source/repos/TestJenkins/TestJenkins'
+			}
         }
 
         stage('Deploy to Local Kubernetes') {
