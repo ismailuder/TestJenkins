@@ -46,13 +46,12 @@ pipeline {
         }
 
         stage('Deploy to Local Kubernetes') {
-            steps {
-                dir("${env.WORKSPACE}") {
-                    // Kubectl komutu çalışacaksa kubectl container içinde kurulu olmalı
-                    sh 'kubectl apply -f k8s/testjenkins-deployment.yaml'
-                }
-            }
-        }
+			steps {
+				dir("${env.WORKSPACE}/TestJenkins") {
+					sh 'kubectl apply -f k8s/testjenkins-deployment.yaml'
+				}
+			}
+		}
     }
 
     post {
