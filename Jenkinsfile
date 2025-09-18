@@ -38,15 +38,19 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-				dir("${env.WORKSPACE}") {
-				sh 'docker build -t testjenkins:latest .'
-        }
-			}
+                dir("${env.WORKSPACE}") {
+                    // Eğer Dockerfile TestJenkins altındaysa:
+                    sh 'docker build -f TestJenkins/Dockerfile -t testjenkins:latest .'
+                }
+            }
         }
 
         stage('Deploy to Local Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/testjenkins-deployment.yaml'
+                dir("${env.WORKSPACE}") {
+                    // Kubectl komutu çalışacaksa kubectl container içinde kurulu olmalı
+                    sh 'kubectl apply -f k8s/testjenkins-deployment.yaml'
+                }
             }
         }
     }
