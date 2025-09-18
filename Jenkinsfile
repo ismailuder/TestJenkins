@@ -45,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Local Kubernetes') {
+        stage('Deploy to Kubernetes') {
 			steps {
 				dir("${env.WORKSPACE}/TestJenkins") {
 					sh 'kubectl apply -f k8s/testjenkins-deployment.yaml'
