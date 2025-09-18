@@ -4,10 +4,7 @@ pipeline {
     environment {
         TEMP_TOOLS = "${WORKSPACE}/.temp_dotnet_tools"
         PATH = "${TEMP_TOOLS}:${env.PATH}"
-        DOCKER_IMAGE = "testjenkins:latest"
-        KUBE_DEPLOYMENT = "testjenkins-deployment"
-        KUBE_SERVICE = "testjenkins-service"
-        NAMESPACE = "default"
+        BUILD_CONFIGURATION = "Release"
     }
 
     stages {
@@ -26,13 +23,13 @@ pipeline {
             }
         }
 
-        stage('Build & Test & SonarQube Analysis') {
+        stage('Build, Test & SonarQube') {
             steps {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         $TEMP_TOOLS/dotnet-sonarscanner begin /k:TestJenkins /d:sonar.login=$SONAR_TOKEN /d:sonar.host.url=http://sonarqube:9000
-                        dotnet build TestJenkins/TestJenkins.csproj -c Release
-                        dotnet test TestJenkins/TestJenkins.csproj -c Release
+                        dotnet build TestJenkins/TestJenkins.csproj -c $BUILD_CONFIGURATION
+                        dotnet test TestJenkins/TestJenkins.csproj -c $BUILD_CONFIGURATION
                         $TEMP_TOOLS/dotnet-sonarscanner end /d:sonar.login=$SONAR_TOKEN
                     '''
                 }
@@ -41,30 +38,19 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-				script {
-					// Dockerfile projenin alt klasöründe
-					sh 'docker build -f TestJenkins/Dockerfile -t testjenkins:latest .'
-				}
-			}
+                sh 'docker build -t testjenkins:latest .'
+            }
         }
 
-        stage('Push to Local Kubernetes') {
+        stage('Deploy to Local Kubernetes') {
             steps {
-                sh '''
-                    # Docker image lokalde hazır, Kubernetes deployment update
-                    kubectl apply -f k8s/testjenkins-deployment.yaml
-                    kubectl apply -f k8s/testjenkins-service.yaml
-                '''
+                sh 'kubectl apply -f k8s/testjenkins-deployment.yaml'
             }
         }
     }
 
     post {
-        success {
-            echo "Pipeline başarılı ✅"
-        }
-        failure {
-            echo "Pipeline başarısız ❌"
-        }
+        success { echo "Pipeline başarılı ✅" }
+        failure { echo "Pipeline başarısız ❌" }
     }
 }
